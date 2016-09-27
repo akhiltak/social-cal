@@ -21,6 +21,8 @@ package model
 
 import (
 	"io/ioutil"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -32,6 +34,10 @@ type Friend struct {
 	loc         Location
 	birthday    time.Time
 	anniversary time.Time
+}
+
+func (f *Friend) GetFName() string {
+	return f.fname
 }
 
 func (f *Friend) GetName() string {
@@ -65,20 +71,37 @@ func (f *Friend) GetAnniversary() time.Time {
 }
 
 func (f *Friend) Save() error {
-	return ioutil.WriteFile(f.fname+".txt", []byte(f.fname), 0600)
+	file, err := os.OpenFile("friends.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString("\n" + f.GetName())
+	return err
+}
+
+func AddFriend(n string) error {
+	f := Friend{
+		fname: n,
+	}
+	return f.Save()
+}
+
+func LoadFriends(filename string) ([]Friend, error) {
+	text, err := ioutil.ReadFile(filename + ".txt")
+	if err != nil {
+		return nil, err
+	}
+	names := strings.Split(string(text), "\n")
+	f := make([]Friend, 0)
+	for _, n := range names {
+		f = append(f, Friend{nick: string(n)})
+	}
+	return f, nil
 }
 
 type Location struct {
 	country string
 	city    string
 	pincode string
-}
-
-func LoadFriends(fname string) (*Friend, error) {
-	text, err := ioutil.ReadFile(fname + ".txt")
-	if err != nil {
-		return nil, err
-	}
-	f := Friend{nick: string(text)}
-	return &f, nil
 }
