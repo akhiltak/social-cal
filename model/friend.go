@@ -39,58 +39,49 @@
 package model
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 )
 
+// Friend defines structure for yaari-dosti
 type Friend struct {
-	fname       string
-	mname       string
-	lname       string
-	nick        string
-	loc         Location
-	birthday    time.Time
-	anniversary time.Time
+	Fname       string    `json:"first_name"`
+	Mname       string    `json:"middle_name,omitempty"`
+	Lname       string    `json:"last_name,omitempty"`
+	Nick        string    `json:"nick_name,omitempty"`
+	Loc         Location  `json:"location,omitempty"`
+	Birthday    time.Time `json:"birthday,omitempty"`
+	Anniversary time.Time `json:"anniversary,omitempty"`
 }
 
-func (f *Friend) GetFName() string {
-	return f.fname
-}
-
+// GetName is getter method for entire name
 func (f *Friend) GetName() string {
-	return f.fname + f.mname + f.lname
+	return strings.TrimSpace(f.Fname+" "+f.Mname) + " " + f.Lname
 }
 
+// SetName is setter method for fields first_name, middle_name and last_name
 func (f *Friend) SetName(first, middle, last string) {
-	f.fname = first
-	f.mname = middle
-	f.lname = last
+	f.Fname = first
+	f.Mname = middle
+	f.Lname = last
 }
 
-func (f *Friend) GetNick() string {
-	return f.nick
-}
-
-func (f *Friend) SetNick(n string) {
-	f.nick = n
-}
-
-func (f *Friend) GetLocation() Location {
-	return f.loc
-}
-
+// GetBirthday is getter method for field birthday
 func (f *Friend) GetBirthday() time.Time {
-	return f.birthday
+	return f.Birthday
 }
 
+// GetAnniversary is getter method for field anniversary
 func (f *Friend) GetAnniversary() time.Time {
-	return f.anniversary
+	return f.Anniversary
 }
 
-func (f *Friend) Save() error {
-	file, err := os.OpenFile("friends.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+// save saves a friend to friend list (file or database)
+func (f *Friend) save() error {
+	file, err := os.OpenFile("friends.json", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
@@ -99,28 +90,38 @@ func (f *Friend) Save() error {
 	return err
 }
 
-func AddFriend(n string) error {
+// AddFriend adds a new friend
+func AddFriend(n string) (Friend, error) {
 	f := Friend{
-		fname: n,
+		Fname: n,
+		Loc: Location{
+			City:    "Mumbai",
+			Country: "India",
+		},
 	}
-	return f.Save()
+	return f, f.save()
 }
 
+// LoadFriends gets all friends from data storage
 func LoadFriends(filename string) ([]Friend, error) {
-	text, err := ioutil.ReadFile(filename + ".txt")
+	file, err := ioutil.ReadFile(filename + ".json")
 	if err != nil {
 		return nil, err
 	}
-	names := strings.Split(string(text), "\n")
-	f := make([]Friend, 0)
-	for _, n := range names {
-		f = append(f, Friend{nick: string(n)})
+	var fl []Friend
+	if err = json.Unmarshal(file, &fl); err != nil {
+		return nil, err
 	}
-	return f, nil
+	return fl, nil
 }
 
+// Location defines struct to store locations
 type Location struct {
-	country string
-	city    string
-	pincode string
+	Country string `json:"country"`
+	City    string `json:"city"`
+	Pincode string `json:"pincode,omitempty"`
+}
+
+func (l *Location) String() string {
+	return l.City + ", " + l.Country + "[" + l.Pincode + "]"
 }

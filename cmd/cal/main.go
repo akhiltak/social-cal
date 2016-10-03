@@ -21,50 +21,62 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
-	"strings"
 
 	"github.com/akhiltak/social-cal/model"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	route := strings.Split(r.URL.Path[1:], "/")
-	fmt.Fprintln(w, "<html><br />")
-	switch route[0] {
-	case "friends":
-		fmt.Fprint(w, fetch())
-	case "add":
-		fmt.Fprint(w, add(route[1]))
-	default:
-		fmt.Fprintf(w, "ROUTING ERROR: Unknown route => <b>%v</b>\n", r.URL.Path)
-	}
-	fmt.Fprintln(w, "<br /></html>")
-}
-
-func add(n string) string {
-	if err := model.AddFriend(n); err != nil {
-		return fmt.Sprintf("Error adding friend:%v\n", err)
-	}
-	return fmt.Sprintf("Added:%v to friend list.", n)
-}
-
-func fetch() string {
+func viewHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: remove hard coding for filename, take as flag input
-	r, err := model.LoadFriends("friends")
+	fl, err := model.LoadFriends("friends")
 	if err != nil {
-		return fmt.Sprintf("Error fetching values:%v", err)
+		renderErrorTemplate(w, "../../asset/error", fmt.Errorf("Error fetching values:%v", err))
 	}
-	names := ""
-	for _, n := range r {
-		names = names + " " + n.GetNick()
+	renderTemplate(w, "../../asset/friends", &fl)
+}
+
+func renderTemplate(w http.ResponseWriter, tmpl string, fl *[]model.Friend) {
+	t, _ := template.ParseFiles(tmpl + ".html")
+	t.Execute(w, fl)
+}
+
+func renderErrorTemplate(w http.ResponseWriter, tmpl string, err error) {
+	t, _ := template.ParseFiles(tmpl + ".html")
+	t.Execute(w, &err)
+}
+
+func addHandler(w http.ResponseWriter, r *http.Request) {
+	f, err := model.AddFriend(r.URL.Path[len("/add/"):])
+	if err != nil {
+		renderErrorTemplate(w, "../../asset/error", err)
 	}
-	return fmt.Sprintf("Names are:%v", names)
+	fmt.Println(f)
+	fl := make([]model.Friend, 1)
+	fmt.Println(fl)
+	fl[0] = f
+	fmt.Println(fl)
+	renderTemplate(w, "../../asset/add", &fl)
+}
+
+func editHandler(w http.ResponseWriter, r *http.Request) {
+	// renderTemplate(w, "../../asset/edit", &f)
+	renderErrorTemplate(w, "../../asset/error", fmt.Errorf("%v", "Not implemented yet."))
+}
+
+func notFound(w http.ResponseWriter, r *http.Request) {
+	renderErrorTemplate(w, "../../asset/not_found", fmt.Errorf("%v", fmt.Errorf("%v", r.URL.Path)))
 }
 
 func main() {
-	// define routes
 	fmt.Println("Running Friends Calendar and Events application...")
-	http.HandleFunc("/", handler)
+	// define routes
+	http.HandleFunc("/", notFound)
+	http.HandleFunc("/friends", viewHandler)
+	http.HandleFunc("/add/", addHandler)
+	http.HandleFunc("/edit/", editHandler)
+
 	fmt.Println("Ready!")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
