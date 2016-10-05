@@ -81,12 +81,26 @@ func (f *Friend) GetAnniversary() time.Time {
 
 // save saves a friend to friend list (file or database)
 func (f *Friend) save() error {
-	file, err := os.OpenFile("friends.json", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	file, err := os.OpenFile("friends.json", os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	_, err = file.WriteString("\n" + f.GetName())
+	_, err = file.Seek(-2, os.SEEK_END)
+	if err != nil {
+		return err
+	}
+	file.Write([]byte(",\n"))
+	data, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	data = append([]byte("\t"), data...)
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+	file.Write([]byte("\n]"))
 	return err
 }
 

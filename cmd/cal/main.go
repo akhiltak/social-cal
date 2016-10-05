@@ -52,11 +52,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		renderErrorTemplate(w, "../../asset/error", err)
 	}
-	fmt.Println(f)
-	fl := make([]model.Friend, 1)
-	fmt.Println(fl)
-	fl[0] = f
-	fmt.Println(fl)
+	fl := []model.Friend{f}
 	renderTemplate(w, "../../asset/add", &fl)
 }
 

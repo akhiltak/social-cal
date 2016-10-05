@@ -6,6 +6,6 @@
 </head>
 <body>
 	<h3>Friend added:</h3>
-	<div>{{printf "%v" .[0]}}</div>
+	<div>{{index . 0 | .Fname}}</div>
 </body>
 </html>
