@@ -17,25 +17,6 @@
  * along with Foobar. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * Copyright 2016 Akhil Tak (Stormblessed)
- *
- * This file is part of social-cal.
-
- * Socal-cal is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
-
- * Social-cal is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with Foobar. If not, see <http://www.gnu.org/licenses/>.
- */
-
 package model
 
 import (
@@ -53,8 +34,10 @@ type Friend struct {
 	Lname       string    `json:"last_name,omitempty"`
 	Nick        string    `json:"nick_name,omitempty"`
 	Loc         Location  `json:"location,omitempty"`
+	CInfo       Contact   `json:"contact_info,omitempty"`
 	Birthday    time.Time `json:"birthday,omitempty"`
 	Anniversary time.Time `json:"anniversary,omitempty"`
+	LastContact time.Time `json:"connected_on,omitempty"`
 }
 
 // GetName is getter method for entire name
@@ -138,4 +121,14 @@ type Location struct {
 
 func (l *Location) String() string {
 	return l.City + ", " + l.Country + "[" + l.Pincode + "]"
+}
+
+// Contact defines struct to store contact information
+type Contact struct {
+	CountryCode string `json:"country_code"`
+	Number      string `json:"number"`
+}
+
+func (c *Contact) String() string {
+	return "[" + c.CountryCode + "]" + c.Number
 }
