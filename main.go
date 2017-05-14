@@ -27,45 +27,45 @@ import (
 	"net/http"
 
 	"github.com/akhiltak/social-cal/model"
+	"github.com/gin-gonic/gin"
 )
 
 type temp struct {
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request) {
+func viewHandler(c *gin.Context) {
 	// TODO: remove hard coding for filename, take as flag input
 	fl, err := model.LoadFriends("friends")
 	if err != nil {
-		renderTemplate(w, "../../asset/error", fmt.Errorf("Error fetching values:%v", err))
+		c.JSON(http.StatusInternalServerError, err)
 	}
-	renderTemplate(w, "../../asset/friends", &fl)
+	c.JSON(http.StatusOK, fl)
 }
 
-func addHandler(w http.ResponseWriter, r *http.Request) {
-	f, err := model.AddFriend(r.URL.Path[len("/add/"):])
+func addHandler(c *gin.Context) {
+	f, err := model.AddFriend(c.Param("name"))
 	if err != nil {
-		http.Redirect(w, r, "/friends", http.StatusFound)
+		c.JSON(http.StatusInternalServerError, err)
 		return
-		// renderTemplate(w, "../../asset/error", err)
 	}
 	fl := []model.Friend{f}
-	renderTemplate(w, "../../asset/add", &fl[0])
+	c.JSON(http.StatusOK, fl[0])
+	// renderTemplate(w, "../../asset/add", &fl[0])
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request) {
-	// renderTemplate(w, "../../asset/edit", &f)
-	renderTemplate(w, "../../asset/error", fmt.Errorf("%v", "Not implemented yet."))
+func editHandler(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{"error": "Not here yet."})
 }
 
-func githubWebhook(w http.ResponseWriter, r *http.Request) {
+func githubWebhook(c *gin.Context) {
 	t := temp{}
-	err := json.NewDecoder(r.Body).Decode(t)
-	fmt.Println(r.Body)
+	err := json.NewDecoder(c.Request.Body).Decode(t)
+	fmt.Println(c.Request.Body)
 	fmt.Println(t)
 	if err != nil {
-		renderTemplate(w, "../../asset/error", fmt.Errorf("Error fetching values:%v", err))
+		c.JSON(http.StatusInternalServerError, err)
 	}
-	renderTemplate(w, "../../asset/default", t)
+	c.JSON(http.StatusOK, t)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
@@ -73,19 +73,22 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	t.Execute(w, data)
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "../../asset/not_found", fmt.Errorf("%v", fmt.Errorf("%v", r.URL.Path)))
+func notFound(c *gin.Context) {
+	c.String(http.StatusOK, "Everything is osum.")
+	// renderTemplate(w, "../../asset/not_found", fmt.Errorf("%v", fmt.Errorf("%v", r.URL.Path)))
 }
 
 func main() {
 	fmt.Println("Running Friends Calendar and Events application...")
+
+	r := gin.Default()
 	// define routes
-	http.HandleFunc("/", notFound)
-	http.HandleFunc("/friends", viewHandler)
-	http.HandleFunc("/add/", addHandler)
-	http.HandleFunc("/edit/", editHandler)
-	http.HandleFunc("/payload", githubWebhook)
+	r.GET("/", notFound)
+	r.GET("/friends", viewHandler)
+	r.GET("/add/:name", addHandler)
+	r.GET("/edit", editHandler)
+	r.GET("/payload", githubWebhook)
 
 	fmt.Println("Ready!")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
